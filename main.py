@@ -16,12 +16,7 @@ bot = commands.Bot(intents=intents)
 
 
 # ---------- ฟังก์ชันคำนวณอายุ ----------
-def calculate_age(birth_str):
-    # birth_str = "DDMMYYYY"
-    day = int(birth_str[0:2])
-    month = int(birth_str[2:4])
-    year = int(birth_str[4:8])
-
+def calculate_age(day, month, year):
     birth_date = datetime(year, month, day)
     today = datetime.today()
 
@@ -45,11 +40,9 @@ class InfoModal(nextcord.ui.Modal):
         self.add_item(self.nickname)
 
         self.birthday = nextcord.ui.TextInput(
-            label="วันเกิด (ตัวเลข 8 หลัก)",
-            placeholder="เช่น 09062005",
-            required=True,
-            min_length=8,
-            max_length=8
+            label="วันเกิด (รูปแบบ DD/MM/YYYY)",
+            placeholder="เช่น 16/07/2004",
+            required=True
         )
         self.add_item(self.birthday)
 
@@ -63,23 +56,25 @@ class InfoModal(nextcord.ui.Modal):
 
     async def callback(self, interaction: Interaction):
 
-        # ---- ตรวจสอบว่าป้อนตัวเลข ----
-        if not self.birthday.value.isdigit():
-            return await interaction.response.send_message(
-                "❌ วันเกิดต้องเป็นตัวเลขเท่านั้น (เช่น 09062005)",
-                ephemeral=True
-            )
-
-        # ---- คำนวณอายุ ----
+        # ---- ตรวจสอบรูปแบบ DD/MM/YYYY ----
         try:
-            age = calculate_age(self.birthday.value)
+            parts = self.birthday.value.split("/")
+            if len(parts) != 3:
+                raise ValueError()
+
+            day, month, year = map(int, parts)
+
+            # ตรวจสอบความถูกต้องของวันที่
+            birth_date = datetime(year, month, day)
+            age = calculate_age(day, month, year)
+
         except:
             return await interaction.response.send_message(
-                "❌ รูปแบบวันเกิดไม่ถูกต้อง เช่น 31022005 ไม่มีอยู่จริง",
+                "❌ วันเกิดต้องเป็นรูปแบบ **DD/MM/YYYY** เช่น **16/07/2004** และต้องเป็นวันที่จริง",
                 ephemeral=True
             )
 
-        # ---- ส่งไปยังช่องที่กำหนด ----
+        # ---- ส่งข้อมูลไปที่ช่องเป้าหมาย ----
         channel = interaction.guild.get_channel(TARGET_CHANNEL_ID)
         await channel.send(
             f"**ข้อมูลใหม่จาก {interaction.user.mention}**\n"
@@ -105,7 +100,7 @@ class InfoButton(nextcord.ui.View):
 # ---------- Slash Command ----------
 @bot.slash_command(name="info", description="แสดงปุ่มสำหรับกรอกข้อมูล")
 async def info_cmd(interaction: Interaction):
-    await interaction.response.defer(ephemeral=False)  # ป้องกัน Unknown interaction
+    await interaction.response.defer(ephemeral=False)
     await interaction.followup.send("กดปุ่มเพื่อกรอกข้อมูล:", view=InfoButton())
 
 
