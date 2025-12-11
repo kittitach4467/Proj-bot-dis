@@ -1,80 +1,75 @@
 import os
 import nextcord
 from nextcord.ext import commands
-from nextcord.ui import Button, View, Modal, TextInput
-from flask import Flask
-import threading
+from nextcord import Interaction, SlashOption, ButtonStyle
 
-# =======================
-# Keep Alive (Koyeb)
-# =======================
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-def run():
-    app.run(host="0.0.0.0", port=8000)
-
-threading.Thread(target=run).start()
-
-# =======================
-# Discord Bot
-# =======================
 TOKEN = os.getenv("DISCORD_TOKEN")
-TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID", "0"))
-
+TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID"))
 
 intents = nextcord.Intents.default()
 intents.message_content = True
-
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(intents=intents)
 
 
 # ---------- Modal ----------
-class InfoModal(Modal):
+class InfoModal(nextcord.ui.Modal):
     def __init__(self):
-        super().__init__("กรอกข้อมูลส่วนตัว")
+        super().__init__("กรอกข้อมูลแนะนำตัว")
 
-        self.nickname = TextInput(label="ชื่อเล่น", required=True)
-        self.birthday = TextInput(label="วันเกิด (DD/MM)", required=True)
-        self.description = TextInput(label="คำอธิบายอื่นๆ", required=False)
-
+        self.nickname = nextcord.ui.TextInput(
+            label="ชื่อเล่น",
+            placeholder="เช่น: ไอซ์",
+            required=True
+        )
         self.add_item(self.nickname)
+
+        self.birthday = nextcord.ui.TextInput(
+            label="วันเกิด",
+            placeholder="เช่น: 11/05",
+            required=True
+        )
         self.add_item(self.birthday)
+
+        self.description = nextcord.ui.TextInput(
+            label="คำอธิบายอื่นๆ",
+            style=nextcord.TextInputStyle.paragraph,
+            placeholder="แนะนำตัวเองเล็กน้อย...",
+            required=False
+        )
         self.add_item(self.description)
 
-    async def callback(self, interaction: nextcord.Interaction):
-
-        # ใช้ตัวแปรแทน channel id ตรง ๆ
+    async def callback(self, interaction: Interaction):
         channel = interaction.guild.get_channel(TARGET_CHANNEL_ID)
-
         await channel.send(
-            f"⭐ **ข้อมูลใหม่ถูกบันทึกแล้ว!**\n"
-            f"- ชื่อเล่น: {self.nickname.value}\n"
-            f"- วันเกิด: {self.birthday.value}\n"
-            f"- อื่นๆ: {self.description.value}"
+            f"⭐ **ข้อมูลใหม่จาก {interaction.user.mention}**\n"
+            f"**ชื่อเล่น:** {self.nickname.value}\n"
+            f"**วันเกิด:** {self.birthday.value}\n"
+            f"**อื่นๆ:** {self.description.value}"
         )
-
-        await interaction.response.send_message("บันทึกข้อมูลเรียบร้อยแล้ว!", ephemeral=True)
-
-# ------------ Button ------------
-class InfoButton(View):
-    @nextcord.ui.button(label="กรอกข้อมูล", style=nextcord.ButtonStyle.green)
-    async def button_callback(self, button, interaction: nextcord.Interaction):
-        modal = InfoModal()
-        await interaction.response.send_modal(modal)
+        await interaction.response.send_message("บันทึกข้อมูลเรียบร้อย!", ephemeral=True)
 
 
-# ------------ Command ------------
-@bot.command()
-async def register(ctx):
-    await ctx.send("กดปุ่มเพื่อกรอกข้อมูล:", view=InfoButton())
+# ---------- Button ----------
+class InfoButton(nextcord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @nextcord.ui.button(label="กดเพื่อกรอกข้อมูล", style=ButtonStyle.primary)
+    async def open_modal(self, button, interaction: Interaction):
+        await interaction.response.send_modal(InfoModal())
 
 
+# ---------- Slash Command ----------
+@bot.slash_command(name="info", description="แสดงปุ่มสำหรับกรอกข้อมูล")
+async def info_cmd(interaction: Interaction):
+    await interaction.response.send_message("กดปุ่มเพื่อกรอกข้อมูล:", view=InfoButton())
+
+
+# ---------- Bot Ready ----------
 @bot.event
 async def on_ready():
+    await bot.sync_application_commands()   # สำคัญมาก!
     print(f"Bot logged in as {bot.user}")
+
 
 bot.run(TOKEN)
