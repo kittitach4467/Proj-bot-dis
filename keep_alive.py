@@ -5,12 +5,19 @@ import threading
 app = FastAPI()
 
 @app.get("/")
-def read_root():
-    return {"status": "bot is running"}
+def home():
+    return {"status": "running"}
 
 def run():
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        "keep_alive:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False,
+        workers=1
+    )
 
 def keep_alive():
     thread = threading.Thread(target=run)
+    thread.daemon = True
     thread.start()
