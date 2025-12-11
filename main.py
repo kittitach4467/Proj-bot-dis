@@ -1,6 +1,8 @@
 import os
 import discord
 from discord.ext import commands
+from keep_alive import keep_alive
+keep_alive()
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -16,5 +18,8 @@ async def on_ready():
 @bot.command()
 async def intro(ctx):
     await ctx.send(f"สวัสดีครับ {ctx.author.mention}! ผมคือบอทแนะนำตัว 🤖")
+
+from keep_alive import keep_alive
+keep_alive()
 
 bot.run(TOKEN)
