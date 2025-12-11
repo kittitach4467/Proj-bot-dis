@@ -2,6 +2,9 @@ import os
 import nextcord
 from nextcord.ext import commands
 from nextcord import Interaction, SlashOption, ButtonStyle
+from keep_alive import keep_alive
+keep_alive()
+
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID"))
