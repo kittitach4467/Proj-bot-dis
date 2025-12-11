@@ -105,7 +105,8 @@ class InfoButton(nextcord.ui.View):
 # ---------- Slash Command ----------
 @bot.slash_command(name="info", description="แสดงปุ่มสำหรับกรอกข้อมูล")
 async def info_cmd(interaction: Interaction):
-    await interaction.response.send_message("กดปุ่มเพื่อกรอกข้อมูล:", view=InfoButton())
+    await interaction.response.defer(ephemeral=False)  # ป้องกัน Unknown interaction
+    await interaction.followup.send("กดปุ่มเพื่อกรอกข้อมูล:", view=InfoButton())
 
 
 # ---------- Bot Ready ----------
